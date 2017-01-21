@@ -38,53 +38,53 @@ HTTP Server          DB Server
 A socket connection can `only` be made between two different socket adapter type, see the diagram above. You can use the same set of `functions` for different adapters.
 ```js
 const functions = {
-	func1: function(self, head, body){
-		console.log(self.name, 'func1 call');
-		// call `AaC.func2`
-		self.next('func2');
-	},
-	func2: function(self, head, body){
-		console.log(self.name, 'func2 call');
-		// call `AaS.func3`
-		self.next('func3');
-		// optional, end `AaC.socket`
-		if(self.name === 'AaC'){ self.socket.end(); }
-	},
-	func3: function(self, head, body){
-		console.log(self.name, 'func3 call');
-		// optional, close `AaS.server`
-		if(self.name === 'AaS'){ self.server.close(); }
-	}
-	// ... and so on
+    func1: function(head, body) {
+        console.log(this.name, 'func1 call');
+        // call `AaC.func2`
+        this.next('func2');
+    },
+    func2: function(head, body) {
+        console.log(this.name, 'func2 call');
+        // call `AaS.func3`
+        this.next('func3');
+        // optional, end `AaC.socket`
+        if (this.name === 'AaC') { this.socket.end(); }
+    },
+    func3: function(head, body) {
+        console.log(this.name, 'func3 call');
+        // optional, close `AaS.server`
+        if (this.name === 'AaS') { this.server.close(); }
+    }
+    // ... and so on
 };
 
-require('net').createServer(function(serverSocket){
+require('net').createServer(function(serverSocket) {
 
-	// create the `AaS` adapter
-	const AaS = new adapter(functions);
-	// optional, adapter name
-	AaS.name = 'AaS';
-	// optional, create `self.server`, see `func3`
-	AaS.server = this;
-	// pipe `AaS` into server socket stream `serverSocket`
-	serverSocket.pipe(AaS).pipe(serverSocket);
+    // create the `AaS` adapter
+    const AaS = new adapter(functions);
+    // optional, adapter name
+    AaS.name = 'AaS';
+    // optional, create `this.server`, see `func3`
+    AaS.server = this;
+    // pipe `AaS` into server socket stream `serverSocket`
+    serverSocket.pipe(AaS).pipe(serverSocket);
 
-}).listen('/tmp/AaS.sock',function(){
+}).listen('/tmp/AaS.sock', function() {
 
-	const clientSocket = require('net').connect('/tmp/AaS.sock',function(){
+    const clientSocket = require('net').connect('/tmp/AaS.sock', function() {
 
-		// create the `AaC` adapter
-		const AaC = new adapter(functions);
-		// optional, adapter name
-		AaC.name = 'AaC';
-		// optional, create `self.socket`, see `func2`
-		AaC.socket = this;
-		// pipe `AaC` into client socket stream `clientSocket`
-		clientSocket.pipe(AaC).pipe(clientSocket);
-		// start data flow
-		AaC.next('func1');// call `AaS.func1`
+        // create the `AaC` adapter
+        const AaC = new adapter(functions);
+        // optional, adapter name
+        AaC.name = 'AaC';
+        // optional, create `this.socket`, see `func2`
+        AaC.socket = this;
+        // pipe `AaC` into client socket stream `clientSocket`
+        clientSocket.pipe(AaC).pipe(clientSocket);
+        // start data flow
+        AaC.next('func1'); // call `AaS.func1`
 
-	});
+    });
 
 });
 // the `AaS` is listening on unix socket `/tmp/AaS.sock` and `AaC` is connecting to it
@@ -101,18 +101,16 @@ Adapters can be use to create routers between internal app functions, without co
 ```js
 // object functions for adapter1
 const fc1 = {
-	test1: function(self, head, body){
-		console.log('test1 call', head, body.toString());
-	}
+    test1: (head, body) => console.log('test1 call', head, body.toString())
 };
 // object functions for adapter2
 const fc2 = {
-	test2: function(self, head, body){
-		console.log('test2 call', head);
-		// `adapter1` is next on the pipe, after `adapter2`
-		// call function `test1` from `adapter1`
-		self.next('test1', head, 'back');
-	}
+    test2: function(head, body) {
+        console.log('test2 call', head);
+        // `adapter1` is next on the pipe, after `adapter2`
+        // call function `test1` from `adapter1`
+        this.next('test1', head, 'back');
+    }
 };
 // adapters
 const adapter1 = new adapter(fc1);
@@ -155,38 +153,38 @@ test1 call welcome_ back
 * <b><code>delq ()</code></b> - delete all queue jobs
 * <b><code>jobs ()</code></b> - return all queue jobs
 
-##### Function adapter `([self[, head,[ body]]])`
-* `self` - Object, this adapter
+##### Function adapter `([head,[ body]])`
 * `head` - Value, can be any type (not function)
 * `body` - Buffer
 
 #### Enable queue
 The adapter has an internal queue system, that is turned off by default. When queue is enabled, each adapter function execution '`adapter.exec`' (and pipe(adapter) exec) is considered as a job. The queue can be enabled on adapter init `new adapter(functions, {queue:true})` or later `adapter.queue=true`.
-> <b>Attention</b>, call `self.done` at the end of each job (adapter function), in order to execute the next queue job, otherwise, if more jobs are added in queue, the queue list will increase until app is out of memory.
+> <b>Attention</b>, call `this.done()` at the end of each job (adapter function), in order to execute the next queue job, otherwise, if more jobs are added in queue, the queue list will increase until app is out of memory.
 
 ```js
 const functions = {
-	job1: function(self, head, body){
-		console.log('job1 call');
-		// set a task for 1s
-		setTimeout(function(){
-			// the task is done
-			console.log('job1 done');
-			// exec the next queue job
-			self.done();
-		},1000);
-	},
-	job2: function(self, head, body){
-		console.log('job2 call');
-		// add a job in the queue
-		self.exec('job1');
-		// exec the next queue job
-		self.done();
-	}
+    job1: function(head, body) {
+        console.log('job1 call');
+        // set a task for 1s
+        const t = this;
+        setTimeout(() => {
+            // the task is done
+            console.log('job1 done');
+            // exec the next job on the queue
+            t.done();
+        }, 1000);
+    },
+    job2: function(head, body) {
+        console.log('job2 call');
+        // add a job in the queue
+        this.exec('job1');
+        // exec the next job on the queue
+        this.done();
+    }
 };
-// by default, queue is disabled
-const adapter1 = new adapter(functions);
-// add jobs
+
+const adapter1 = new adapter(functions, { queue: false });
+// add two jobs
 adapter1.exec('job1').exec('job2');
 /*
 Output:
@@ -199,9 +197,9 @@ job1 done
 */
 
 // {queue:true} - enable queue
-const adapter2 = new adapter(functions, {queue:true});
+const adapter2 = new adapter(functions, { queue: true });
 // add jobs
-adapter2.exec('job1').exec('job2');
+adapter2.exec('job1').exec('job1').exec('job1');
 /*
 Output:
 ------

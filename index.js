@@ -43,7 +43,7 @@ adapter.prototype.exec = function(func, head, body) {
             if (this.queue) { // queue is enabled
                 if (this._j) { // job is free
                     this._j = false; // set job busy
-                    this._f[func](this, head, body); // exec job
+                    this._f[func].bind(this)(head, body); // exec job
                 } else { // job is busy
                     if (this._q.length === this.qumax) {
                         this.emit(this.error, new Error('queue is full'));
@@ -54,7 +54,7 @@ adapter.prototype.exec = function(func, head, body) {
                 }
             } else { // queue is disabled
                 this.delq(); // make sure the queue list is empty
-                this._f[func](this, head, body); // async exec job
+                this._f[func].bind(this)(head, body); // async exec job
             }
         } else { this.emit(this.error, new Error('invalid function name [ ' + func + ' ]')); }
     } else { this.emit(this.error, new Error('function not found')); }
@@ -65,7 +65,7 @@ adapter.prototype.done = function() { // job is done
     if (this.queue) { // queue is enabled
         if (this._q[0]) { // got queue
             const j = this._q.shift(); // get the job and remove it from queue list
-            this._f[j.func](this, j.head, j.body); // exec job
+            this._f[j.func].bind(this)(j.head, j.body); // exec job
         } else { // queue is empty
             this._j = true; // set job free
         }

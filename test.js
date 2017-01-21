@@ -16,7 +16,7 @@ const adapter = require('./index.js');
 // TO RUN A SINGLE TEST, ISOLATE OTHERS, BY COMMENT /* (function(){ TEST })(); */
 
 // RUN TEST: PROTOCOL ======================================================================
-(function() {
+(() => {
 
     const Readable = require('stream').Readable;
 
@@ -35,21 +35,21 @@ const adapter = require('./index.js');
     };
 
     const fc = {
-        t: function(self, head, body) { console.log('t call', head, body); }
+        t: (head, body) => console.log('t call', head, body)
     };
 
     new readStream().
-    on('data', function(data) { console.log('read onData', data); }).
+    on('data', data => console.log('read onData', data)).
     on('end', function() { console.log('read onEnd', this.i - 1); }).
     pipe(new adapter(fc, { data: 'obj', error: 'err' })). //,{end:false}
-    on('err', function(e) { console.log('adapter onErr', e); }).
-    on('error', function(e) { console.log('adapter onError', e); }).
-    on('finish', function() { console.log('adapter onFinish'); });
+    on('err', e => console.log('adapter onErr', e)).
+    on('error', e => console.log('adapter onError', e)).
+    on('finish', () => console.log('adapter onFinish'));
 
 })(); // END TEST
 
 // RUN TEST: NETWORK ROUTER ================================================================
-(function() {
+(() => {
 
     const sock = '/tmp/AaS.sock',
         fs = require('fs');
@@ -59,22 +59,22 @@ const adapter = require('./index.js');
     } catch (e) {}
 
     const functions = {
-        func1: function(self, head, body) {
-            console.log(self.name, 'func1 call');
+        func1: function(head, body) {
+            console.log(this.name, 'func1 call');
             // call `AaC.func2`
-            self.next('func2');
+            this.next('func2');
         },
-        func2: function(self, head, body) {
-            console.log(self.name, 'func2 call');
+        func2: function(head, body) {
+            console.log(this.name, 'func2 call');
             // call `AaS.func3`
-            self.next('func3');
+            this.next('func3');
             // optional, end `AaC.socket`
-            if (self.name === 'AaC') { self.socket.end(); }
+            if (this.name === 'AaC') { this.socket.end(); }
         },
-        func3: function(self, head, body) {
-            console.log(self.name, 'func3 call');
+        func3: function(head, body) {
+            console.log(this.name, 'func3 call');
             // optional, close `AaS.server`
-            if (self.name === 'AaS') { self.server.close(); }
+            if (this.name === 'AaS') { this.server.close(); }
         }
         // ... and so on
     };
@@ -85,7 +85,7 @@ const adapter = require('./index.js');
         const AaS = new adapter(functions);
         // optional, adapter name
         AaS.name = 'AaS';
-        // optional, create `self.server`, see `func3`
+        // optional, create `this.server`, see `func3`
         AaS.server = this;
         // pipe `AaS` into server socket stream `serverSocket`
         serverSocket.pipe(AaS).pipe(serverSocket);
@@ -98,7 +98,7 @@ const adapter = require('./index.js');
             const AaC = new adapter(functions);
             // optional, adapter name
             AaC.name = 'AaC';
-            // optional, create `self.socket`, see `func2`
+            // optional, create `this.socket`, see `func2`
             AaC.socket = this;
             // pipe `AaC` into client socket stream `clientSocket`
             clientSocket.pipe(AaC).pipe(clientSocket);
@@ -112,21 +112,19 @@ const adapter = require('./index.js');
 })(); // END TEST
 
 // RUN TEST: BASIC ROUTER ==================================================================
-(function() {
+(() => {
 
     // object functions for adapter1
     const fc1 = {
-        test1: function(self, head, body) {
-            console.log('test1 call', head, body.toString());
-        }
+        test1: (head, body) => console.log('test1 call', head, body.toString())
     };
     // object functions for adapter2
     const fc2 = {
-        test2: function(self, head, body) {
+        test2: function(head, body) {
             console.log('test2 call', head);
             // `adapter1` is next on the pipe, after `adapter2`
             // call function `test1` from `adapter1`
-            self.next('test1', head, 'back');
+            this.next('test1', head, 'back');
         }
     };
     // adapters
@@ -146,25 +144,26 @@ const adapter = require('./index.js');
 })(); // END TEST
 
 // RUN TEST: QUEUE =========================================================================
-(function() {
+(() => {
 
     const functions = {
-        job1: function(self, head, body) {
+        job1: function(head, body) {
             console.log('job1 call');
             // set a task for 1s
-            setTimeout(function() {
+            const t = this;
+            setTimeout(() => {
                 // the task is done
                 console.log('job1 done');
                 // exec the next job on the queue
-                self.done();
+                t.done();
             }, 1000);
         },
-        job2: function(self, head, body) {
+        job2: function(head, body) {
             console.log('job2 call');
             // add a job in the queue
-            self.exec('job1');
+            this.exec('job1');
             // exec the next job on the queue
-            self.done();
+            this.done();
         }
     };
 
@@ -172,9 +171,11 @@ const adapter = require('./index.js');
     // add two jobs
     adapter1.exec('job1').exec('job2');
 
+    // {queue:true} - enable queue
     const adapter2 = new adapter(functions, { queue: true });
-
+    // add jobs
     adapter2.exec('job1').exec('job1').exec('job1');
+
     console.log(adapter2.jobs().length);
 
 })(); // END TEST
