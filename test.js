@@ -90,7 +90,7 @@ const adapter = require('./index.js');
         // pipe `AaS` into server socket stream `serverSocket`
         serverSocket.pipe(AaS).pipe(serverSocket);
 
-    }).listen('/tmp/AaS.sock', function() {
+    }).listen('/tmp/AaS.sock', () => {
 
         const clientSocket = require('net').connect('/tmp/AaS.sock', function() {
 
