@@ -1,0 +1,31 @@
+{
+  "name": "service-adapter",
+  "version": "3.0.0",
+  "description": "Service Adapter - stream transform protocol with queue control",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RealTimeCom/service-adapter.git"
+  },
+  "keywords": [
+    "service",
+    "microservice",
+    "adapter",
+    "adaptor",
+    "server",
+    "client",
+    "proxy",
+    "protocol",
+    "transform",
+    "stream"
+  ],
+  "author": "Tanase Laurentiu Iulian <expertphp@gmail.com> (https://github.com/RealTimeCom)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RealTimeCom/service-adapter/issues"
+  },
+  "homepage": "https://github.com/RealTimeCom/service-adapter#readme"
+}
