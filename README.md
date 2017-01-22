@@ -2,6 +2,7 @@
 [![NPM](https://nodei.co/npm/service-adapter.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/service-adapter/)
 
 [![Build Status](https://travis-ci.org/RealTimeCom/service-adapter.svg?branch=master)](http://travis-ci.org/RealTimeCom/service-adapter)
+[![dependencies](https://david-dm.org/RealTimeCom/service-adapter.svg)](https://david-dm.org/RealTimeCom/service-adapter)
 
 **Service Adapter - stream transform protocol with queue control**
 
