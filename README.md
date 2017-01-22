@@ -16,6 +16,7 @@ $ npm test
 $ node test.js
 ```
 Compare test results with <a href="https://travis-ci.org/RealTimeCom/service-adapter">travis run tests</a>.
+
 #### Include in your script
 ```js
 const adapter = require('service-adapter');
@@ -47,18 +48,18 @@ const functions = {
         console.log(this.name, 'func2 call');
         // call `AaS.func3`
         this.next('func3');
-        // optional, end `AaC.socket`
-        if (this.name === 'AaC') { this.socket.end(); }
+        // optional, end client connection
+        if (this.name === 'AaC') { this.client.end(); }
     },
     func3: function(head, body) {
         console.log(this.name, 'func3 call');
-        // optional, close `AaS.server`
+        // optional, close the server
         if (this.name === 'AaS') { this.server.close(); }
     }
     // ... and so on
 };
 
-require('net').createServer(function(serverSocket) {
+require('net').createServer(function(socket) {
 
     // create the `AaS` adapter
     const AaS = new adapter(functions);
@@ -66,21 +67,21 @@ require('net').createServer(function(serverSocket) {
     AaS.name = 'AaS';
     // optional, create `this.server`, see `func3`
     AaS.server = this;
-    // pipe `AaS` into server socket stream `serverSocket`
-    serverSocket.pipe(AaS).pipe(serverSocket);
+    // pipe `AaS` into `socket` stream
+    socket.pipe(AaS).pipe(socket);
 
 }).listen('/tmp/AaS.sock', () => {
 
-    const clientSocket = require('net').connect('/tmp/AaS.sock', function() {
+    require('net').connect('/tmp/AaS.sock', function() {
 
         // create the `AaC` adapter
         const AaC = new adapter(functions);
         // optional, adapter name
         AaC.name = 'AaC';
-        // optional, create `this.socket`, see `func2`
-        AaC.socket = this;
-        // pipe `AaC` into client socket stream `clientSocket`
-        clientSocket.pipe(AaC).pipe(clientSocket);
+        // optional, create `this.client`, see `func2`
+        AaC.client = this;
+        // pipe `AaC` into `this` client stream
+        this.pipe(AaC).pipe(this);
         // start data flow
         AaC.next('func1'); // call `AaS.func1`
 
@@ -225,9 +226,9 @@ The adapter emit, by default, the event named `err` for errors, to ensure the da
 // default adapter `err` error event name
 new adapter(functions, {error:'err'}).
 // adapter error `err` event, non-blocking mode
-on('err', function(e){ console.log('adapter onErr', e); }).
+on('err', e => console.log('adapter onErr', e)).
 // stream standard `error` event, blocking mode
-on('error', function(e){ console.log('adapter onError', e); });
+on('error', e => console.log('adapter onError', e));
 ```
 
 **For more informations, consult or run the <a href="https://github.com/RealTimeCom/service-adapter/blob/master/test.js"><b>test.js</b></a> file.**

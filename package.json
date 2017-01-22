@@ -1,6 +1,6 @@
 {
   "name": "service-adapter",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "Service Adapter - stream transform protocol with queue control",
   "main": "index.js",
   "scripts": {

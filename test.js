@@ -68,18 +68,18 @@ const adapter = require('./index.js');
             console.log(this.name, 'func2 call');
             // call `AaS.func3`
             this.next('func3');
-            // optional, end `AaC.socket`
-            if (this.name === 'AaC') { this.socket.end(); }
+            // optional, end client connection
+            if (this.name === 'AaC') { this.client.end(); }
         },
         func3: function(head, body) {
             console.log(this.name, 'func3 call');
-            // optional, close `AaS.server`
+            // optional, close the server
             if (this.name === 'AaS') { this.server.close(); }
         }
         // ... and so on
     };
 
-    require('net').createServer(function(serverSocket) {
+    require('net').createServer(function(socket) {
 
         // create the `AaS` adapter
         const AaS = new adapter(functions);
@@ -87,21 +87,21 @@ const adapter = require('./index.js');
         AaS.name = 'AaS';
         // optional, create `this.server`, see `func3`
         AaS.server = this;
-        // pipe `AaS` into server socket stream `serverSocket`
-        serverSocket.pipe(AaS).pipe(serverSocket);
+        // pipe `AaS` into `socket` stream
+        socket.pipe(AaS).pipe(socket);
 
     }).listen('/tmp/AaS.sock', () => {
 
-        const clientSocket = require('net').connect('/tmp/AaS.sock', function() {
+        require('net').connect('/tmp/AaS.sock', function() {
 
             // create the `AaC` adapter
             const AaC = new adapter(functions);
             // optional, adapter name
             AaC.name = 'AaC';
-            // optional, create `this.socket`, see `func2`
-            AaC.socket = this;
-            // pipe `AaC` into client socket stream `clientSocket`
-            clientSocket.pipe(AaC).pipe(clientSocket);
+            // optional, create `this.client`, see `func2`
+            AaC.client = this;
+            // pipe `AaC` into `this` client stream
+            this.pipe(AaC).pipe(this);
             // start data flow
             AaC.next('func1'); // call `AaS.func1`
 
